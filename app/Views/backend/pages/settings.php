@@ -1,0 +1,205 @@
+<?= $this->extend('backend/layout/pages-layout') ?>
+<?= $this->section('content') ?>
+<div class="page-header">
+    <div class="row">
+        <div class="col-md-12 col-sm-12">
+            <div class="title">
+                <h4>Settings</h4>
+            </div>
+            <nav aria-label="breadcrumb" role="navigation">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="<?= route_to('admin.home')?>">Beranda</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        Pengaturan
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="pd-20 card-box">
+        <div class="tab">
+        <ul class="nav nav-tabs customtab" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" data-toggle="tab" href="#general_settings" role="tab"
+                    aria-selected="true">Pengaturan general</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#logo_favicon" role="tab" aria-selected="false">Logo
+                    blog</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="tab" href="#social_media" role="tab" aria-selected="false">Social
+                    media</a>
+            </li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane fade active show" id="general_settings" role="tabpanel">
+                <div class="pd-20">
+                    <form action="<?= route_to('update-general-settings') ?>" method="post" id="general_settings_form">
+                        <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>" class="ci_csrf_data">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="">Judul Blog</label>
+                                    <input type="text" name="blog_title" class="form-control"
+                                        placeholder="Masukan judul blog" value="<?= get_settings()->blog_title ?>">
+                                    <span class="text-danger error-text blog_title_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="">Email Blog</label>
+                                    <input type="text" name="blog_email" class="form-control"
+                                        placeholder="Masukan email blog" value="<?= get_settings()->blog_email ?>">
+                                    <span class="text-danger error-text blog_email_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="">Blog telp.</label>
+                                    <input type="text" name="blog_phone" class="form-control"
+                                        placeholder="Masukan no. telp blog" value="<?= get_settings()->blog_phone ?>">
+                                    <span class="text-danger error-text blog_phone_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="">Blog meta keywords</label>
+                                    <input type="text" name="blog_meta_keywords" class="form-control"
+                                        placeholder="Masukan Blog meta keywords"
+                                        value="<?= get_settings()->blog_meta_keywords ?>">
+                                    <span class="text-danger error-text blog_meta_keywords_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="">Blog meta description</label>
+                                    <textarea cols="4" rows="3" name="blog_meta_description" class="form-control"
+                                        placeholder="Masukan blog meta description"
+                                        value="<?= get_settings()->blog_meta_description ?>"><?= get_settings()->blog_meta_description ?></textarea>
+                                    <span class="text-danger error-text blog_meta_description_error"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary">Simpan perubahan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="logo_favicon" role="tabpanel">
+                <div class="pd-20">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Logo blog</h5>
+                            <div class="mb2 mt-1 form-group" style="max-width: 200px;">
+                                <img src="<?= get_settings()->blog_logo !== null ? '/images/blogs/' . get_settings()->blog_logo : "" ?>"
+                                    alt="" class="img-thumbnail" id="logo-image-preview">
+                            </div>
+                            <form action="<?= route_to('update-blog-logo') ?>" method="post"
+                                enctype="multipart/form-data" id="change_blog_logo_form">
+                                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>"
+                                    class="ci_csrf_data">
+                                <div class="mb2 form-group">
+                                    <input type="file" name="blog_logo" class="form-control" id="">
+                                    <span class="text-danger error-text"></span>
+                                </div>
+                                <div class="form-group">
+                                    <button class="btn btn-primary" type="submit">Simpan perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Blog favicon</h5>
+                            <div class="mb2 mt-1 form-group" style="max-width:100px">
+                                <img src="<?= get_settings()->blog_favicon !== null ? '/images/blogs/' . get_settings()->blog_favicon : "" ?>"
+                                    alt="" class="img-thumbnail" id="favicon-image-preview">
+                            </div>
+                            <form action="<?= route_to('update-blog-favicon') ?>" method="post"
+                                id="change_blog_favicon_form" enctype="multipart/form-data">
+                                <input type="hidden" name="<?= csrf_token() ?>" value="<?= csrf_hash() ?>"
+                                    class="ci_csrf_data">
+                                <div class="mb2 form-group">
+                                    <input type="file" name="blog_favicon" class="form-control" id="">
+                                    <span class="text-danger error-text"></span>
+                                </div>
+                                <div class="form-group">
+                                    <button type="submit" class="btn btn-primary">Simpan perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="social_media" role="tabpanel">
+                <div class="pd-20">
+                    <form action="<?= route_to('update-social-media') ?>" method="post" id="social-media-form">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">Facebook URL</label>
+                                    <input type="text" name="facebook_url" placeholder="Masukan url halaman facebook"
+                                        class="form-control" value="<?= get_social_media()->facebook_url ?>">
+                                    <span class="text-danger error-text facebook_url_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">Twitter URL</label>
+                                    <input type="text" name="twitter_url" placeholder="Masukan url halaman Twitter"
+                                        class="form-control" value="<?= get_social_media()->twitter_url ?>">
+                                    <span class="text-danger error-text twitter_url_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">Instagram URL</label>
+                                    <input type="text" name="instagram_url" placeholder="Masukan url halaman Instagram"
+                                        class="form-control" value="<?= get_social_media()->instagram_url?>">
+                                    <span class="text-danger error-text instagram_url_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">Youtube URL</label>
+                                    <input type="text" name="youtube_url" placeholder="Masukan url halaman Youtube channel"
+                                        class="form-control" value="<?= get_social_media()->youtube_url ?>">
+                                    <span class="text-danger error-text youtube_url_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">Tiktok URL</label>
+                                    <input type="text" name="tiktok_url" placeholder="Masukan url halaman tiktok"
+                                        class="form-control" value="<?= get_social_media()->tiktok_url ?>">
+                                    <span class="text-danger error-text tiktok_url_error"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="">LinkedIn URL</label>
+                                    <input type="text" name="linkedin_url" placeholder="Masukan url halaman Linkedin"
+                                        class="form-control" value="<?= get_social_media()->linkedin_url ?>">
+                                    <span class="text-danger error-text linkedin_url_error"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button class="btn btn-primary" type="submit">Simpan perubahan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<?= $loadJS ?>
+<?= $this->endSection() ?>
