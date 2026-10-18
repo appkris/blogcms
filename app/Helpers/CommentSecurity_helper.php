@@ -164,3 +164,65 @@ if (!function_exists('comment_process')) {
         return ['text' => $text, 'is_spam' => $isSpam];
     }
 }
+
+if (!function_exists('comment_verify_recaptcha')) {
+    /**
+     * Verifikasi token response Google reCAPTCHA v2 ke API Google.
+     * Return true jika valid, false jika gagal.
+     */
+    function comment_verify_recaptcha(?string $token, ?string $ip = null): bool
+    {
+        $secretKey = env('RECAPTCHA_SECRET_KEY');
+        if (empty($secretKey)) {
+            // Bila secret key belum diset di .env, loloskan untuk development
+            return true;
+        }
+
+        if (empty($token)) {
+            return false;
+        }
+
+        $url = 'https://www.google.com/recaptcha/api/siteverify';
+        $postData = [
+            'secret'   => $secretKey,
+            'response' => $token,
+        ];
+        if (!empty($ip)) {
+            $postData['remoteip'] = $ip;
+        }
+
+        try {
+            $client = \Config\Services::curlrequest([
+                'timeout' => 5,
+            ]);
+            $response = $client->asFormField()->post($url, [
+                'form_params' => $postData,
+            ]);
+
+            if ($response->getStatusCode() === 200) {
+                $body = json_decode($response->getBody(), true);
+                return isset($body['success']) && $body['success'] === true;
+            }
+        } catch (\Throwable $e) {
+            log_message('error', 'Google reCAPTCHA verification error: ' . $e->getMessage());
+            // Fallback dengan file_get_contents / curl standar bila Service cURL bermasalah
+            if (ini_get('allow_url_fopen')) {
+                $context = stream_context_create([
+                    'http' => [
+                        'method'  => 'POST',
+                        'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                        'content' => http_build_query($postData),
+                        'timeout' => 5,
+                    ],
+                ]);
+                $result = @file_get_contents($url, false, $context);
+                if ($result !== false) {
+                    $body = json_decode($result, true);
+                    return isset($body['success']) && $body['success'] === true;
+                }
+            }
+        }
+
+        return false;
+    }
+}

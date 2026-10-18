@@ -3,8 +3,9 @@
  * Partial: comments.php
  * Variabel: $post, $comments (nested 1 level), $totalComments
  */
-$adminAvatarUrl = get_admin_avatar_url(44);
+$adminAvatarUrl   = get_admin_avatar_url(44);
 $adminAvatarSmUrl = get_admin_avatar_url(36);
+$recaptchaSiteKey = env('RECAPTCHA_SITE_KEY');
 ?>
 
 <div class="comments-section" id="comments">
@@ -57,6 +58,11 @@ $adminAvatarSmUrl = get_admin_avatar_url(36);
                                 <input type="email" name="email"   placeholder="Email *" required>
                             </div>
                             <textarea name="comment" placeholder="Tulis balasan..." required minlength="5" maxlength="1000" rows="3"></textarea>
+                            <?php if (!empty($recaptchaSiteKey)): ?>
+                                <div class="cs-recaptcha-wrapper my-2">
+                                    <div class="cs-reply-recaptcha" data-sitekey="<?= esc($recaptchaSiteKey) ?>"></div>
+                                </div>
+                            <?php endif; ?>
                             <div class="cs-form-actions">
                                 <button type="submit" class="cs-btn-submit">Kirim Balasan</button>
                                 <button type="button" class="cs-btn-cancel" data-target="rf-<?= $c->id ?>">Batal</button>
@@ -107,6 +113,11 @@ $adminAvatarSmUrl = get_admin_avatar_url(36);
                 <input type="email" name="email" placeholder="Email *" required>
             </div>
             <textarea name="comment" placeholder="Tulis komentar Anda..." required minlength="5" maxlength="1000" rows="5"></textarea>
+            <?php if (!empty($recaptchaSiteKey)): ?>
+                <div class="cs-recaptcha-wrapper my-3">
+                    <div class="g-recaptcha" data-sitekey="<?= esc($recaptchaSiteKey) ?>"></div>
+                </div>
+            <?php endif; ?>
             <div class="cs-form-actions">
                 <button type="submit" class="cs-btn-submit">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -337,6 +348,34 @@ $adminAvatarSmUrl = get_admin_avatar_url(36);
 <script>
 (function () {
     const STORE_URL = '<?= route_to('comment.store') ?>';
+    const RECAPTCHA_SITE_KEY = '<?= esc($recaptchaSiteKey) ?>';
+    const widgetMap = new WeakMap();
+
+    // Inisialisasi Google reCAPTCHA script jika key tersedia
+    if (RECAPTCHA_SITE_KEY && !window.grecaptcha) {
+        const s = document.createElement('script');
+        s.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+        s.async = true;
+        s.defer = true;
+        s.onload = function () {
+            if (window.grecaptcha && window.grecaptcha.ready) {
+                window.grecaptcha.ready(initRecaptcha);
+            }
+        };
+        document.head.appendChild(s);
+    } else if (RECAPTCHA_SITE_KEY && window.grecaptcha && window.grecaptcha.ready) {
+        window.grecaptcha.ready(initRecaptcha);
+    }
+
+    function initRecaptcha() {
+        const mainEl = document.querySelector('#main-comment-form .g-recaptcha');
+        if (mainEl && !widgetMap.has(mainEl)) {
+            try {
+                const wId = grecaptcha.render(mainEl, { sitekey: RECAPTCHA_SITE_KEY });
+                widgetMap.set(mainEl.closest('form'), wId);
+            } catch (err) {}
+        }
+    }
 
     // Toggle form reply
     document.addEventListener('click', function (e) {
@@ -348,7 +387,20 @@ $adminAvatarSmUrl = get_admin_avatar_url(36);
             // Tutup semua form reply lain
             document.querySelectorAll('.cs-reply-form').forEach(f => f.style.display = 'none');
             el.style.display = isOpen ? 'none' : 'block';
-            if (!isOpen) el.querySelector('input[name="name"]')?.focus();
+            if (!isOpen) {
+                el.querySelector('input[name="name"]')?.focus();
+                // Render reCAPTCHA di form reply jika belum di-render
+                if (RECAPTCHA_SITE_KEY && window.grecaptcha) {
+                    const replyBox = el.querySelector('.cs-reply-recaptcha');
+                    const replyForm = el.querySelector('form');
+                    if (replyBox && replyForm && !widgetMap.has(replyForm)) {
+                        try {
+                            const wId = grecaptcha.render(replyBox, { sitekey: RECAPTCHA_SITE_KEY });
+                            widgetMap.set(replyForm, wId);
+                        } catch (err) {}
+                    }
+                }
+            }
         }
 
         const cancel = e.target.closest('.cs-btn-cancel');
@@ -377,6 +429,19 @@ $adminAvatarSmUrl = get_admin_avatar_url(36);
         const csrf = form.querySelector('.ci_csrf');
         if (csrf) fd.set(csrf.name, csrf.value);
 
+        // Ambil token response reCAPTCHA
+        let recaptchaToken = '';
+        if (window.grecaptcha) {
+            if (widgetMap.has(form)) {
+                recaptchaToken = grecaptcha.getResponse(widgetMap.get(form));
+            } else {
+                recaptchaToken = grecaptcha.getResponse();
+            }
+        }
+        if (recaptchaToken) {
+            fd.set('g-recaptcha-response', recaptchaToken);
+        }
+
         btn.disabled = true;
         btn.textContent = 'Mengirim...';
         msgEl.innerHTML = '';
@@ -390,16 +455,38 @@ $adminAvatarSmUrl = get_admin_avatar_url(36);
             if (res.status === 1) {
                 msgEl.innerHTML = '<div class="cs-alert cs-alert-success">' + res.msg + '</div>';
                 form.reset();
+                if (window.grecaptcha) {
+                    if (widgetMap.has(form)) {
+                        grecaptcha.reset(widgetMap.get(form));
+                    } else {
+                        grecaptcha.reset();
+                    }
+                }
                 const wrapper = form.closest('.cs-reply-form');
                 if (wrapper) setTimeout(() => wrapper.style.display = 'none', 2200);
             } else {
                 let msg = res.msg || '';
                 if (res.errors) msg = Object.values(res.errors).join('<br>');
                 msgEl.innerHTML = '<div class="cs-alert cs-alert-error">' + msg + '</div>';
+                // Reset reCAPTCHA agar user bisa coba lagi
+                if (window.grecaptcha) {
+                    if (widgetMap.has(form)) {
+                        grecaptcha.reset(widgetMap.get(form));
+                    } else {
+                        grecaptcha.reset();
+                    }
+                }
             }
         })
         .catch(() => {
             msgEl.innerHTML = '<div class="cs-alert cs-alert-error">Terjadi kesalahan. Coba lagi.</div>';
+            if (window.grecaptcha) {
+                if (widgetMap.has(form)) {
+                    grecaptcha.reset(widgetMap.get(form));
+                } else {
+                    grecaptcha.reset();
+                }
+            }
         })
         .finally(() => {
             btn.disabled = false;

@@ -37,6 +37,15 @@ class CommentController extends BaseController
             ]);
         }
 
+        // Verifikasi Google reCAPTCHA
+        $recaptchaResponse = $this->request->getPost('g-recaptcha-response');
+        if (!comment_verify_recaptcha($recaptchaResponse, $ip)) {
+            return $this->response->setJSON([
+                'status' => 0,
+                'msg'    => 'Verifikasi reCAPTCHA gagal. Harap centang kotak "Saya bukan robot".',
+            ]);
+        }
+
         // Rate limit
         if (comment_rate_limit($ip)) {
             return $this->response->setJSON([
