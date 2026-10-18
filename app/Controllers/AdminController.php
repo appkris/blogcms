@@ -61,7 +61,7 @@ class AdminController extends BaseController
     public function updatePersonalDetails()
 {
 
-    $validation = \Config\Services::validation();
+    $validation = Services::validation();
     $rules = [
         'name' => 'required',
         'username' => 'required',
@@ -75,7 +75,7 @@ class AdminController extends BaseController
         ]);
     }
 
-    $userModel = new \App\Models\User();
+    $userModel = new User();
     $userId = function_exists('get_user') ? get_user()->id : (CIAuth::id() ?? null);
     $user_info = null;
     if ($userId) {
@@ -1379,7 +1379,7 @@ public function updateAuthorPhoto()
         }
 
         // Manipulasi gambar: resize ke max width 450px, crop rasio 16:9
-        $imageService = \Config\Services::image();
+        $imageService = Services::image();
         $imageService->withFile($file)
             ->resize(450, 253, true, 'width') // 16:9 rasio, 450x253
             ->save($uploadPath . $newName);

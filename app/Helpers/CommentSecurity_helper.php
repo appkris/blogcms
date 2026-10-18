@@ -195,7 +195,7 @@ if (!function_exists('comment_verify_recaptcha')) {
             $client = \Config\Services::curlrequest([
                 'timeout' => 5,
             ]);
-            $response = $client->asFormField()->post($url, [
+            $response = $client->post($url, [
                 'form_params' => $postData,
             ]);
 
