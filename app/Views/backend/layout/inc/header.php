@@ -6,7 +6,8 @@
     <div class="header-right">
         <div class="dashboard-setting user-notification">
             <div class="dropdown">
-                <a class="dropdown-toggle no-arrow" href="javascript:;" data-toggle="right-sidebar" title="Pengaturan Layout">
+                <a class="dropdown-toggle no-arrow" href="javascript:;" data-toggle="right-sidebar"
+                    title="Pengaturan Layout">
                     <i class="dw dw-settings2"></i>
                 </a>
             </div>
@@ -33,7 +34,7 @@
             </div>
         </div>
         <div class="github-link">
-            <a href="/" target="_blank"><img src="/backend/vendors/images/github.svg"
+            <a href="https://github.com/appkris/" target="_blank"><img src="/backend/vendors/images/github.svg"
                     alt="" /></a>
         </div>
     </div>

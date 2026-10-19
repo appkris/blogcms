@@ -47,7 +47,8 @@
                             <th scope="col">Featured image</th>
                             <th scope="col">Title</th>
                             <th scope="col">Category</th>
-                            <th scope="col">visibility</th>
+                            <th scope="col">Visibility</th>
+                            <th scope="col">Tanggal</th>
                             <th scope="col">Action</th>
                         </tr>
                     </thead>

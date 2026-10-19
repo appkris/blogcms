@@ -13,10 +13,10 @@ var posts_DT = $('#posts-table').DataTable({
         $('td', row).eq(0).html(index + 1);
     },
     columnDefs: [
-        { orderable: false, targets: [0, 1, 2, 3, 4, 5] },
-        { visible: false, targets: 6 }
+        { orderable: false, targets: [0, 1, 3, 4, 6] },
+        { orderable: true, targets: [2, 5] }
     ],
-    order: [[6, 'asc']]
+    order: [[5, 'desc']]
 });
 
 

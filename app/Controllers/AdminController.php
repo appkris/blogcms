@@ -31,8 +31,20 @@ class AdminController extends BaseController
 
     public function index()
     {
+        $postModel        = new Post();
+        $subCategoryModel = new SubCategory();
+
+        $totalPosts     = $postModel->countAllResults();
+        $totalPublished = $postModel->where('visibility', 1)->countAllResults();
+        $totalDraft     = $postModel->where('visibility', 0)->countAllResults();
+        $totalCats      = $subCategoryModel->countAllResults();
+
         $data = [
-            'pageTitle' => 'Dashboard',
+            'pageTitle'      => 'Dashboard',
+            'totalPosts'     => $totalPosts,
+            'totalPublished' => $totalPublished,
+            'totalDraft'     => $totalDraft,
+            'totalCategories'=> $totalCats,
         ];
         return view('backend/pages/home', $data);
     }
@@ -1141,8 +1153,16 @@ class AdminController extends BaseController
                 }
             ),
             array(
-                'db' => 'slug',
+                'db' => 'created_at',
                 'dt' => 5,
+                'formatter' => function ($d, $row) {
+                    $time = $row['created_at'] ?? '';
+                    return !empty($time) ? date('d M Y, H:i', strtotime($time)) : '-';
+                }
+            ),
+            array(
+                'db' => 'slug',
+                'dt' => 6,
                 'formatter' => function ($d, $row) {
                     $slug = $row['slug'] ?? '';
                     $id   = $row['id'] ?? 0;
@@ -1156,14 +1176,10 @@ class AdminController extends BaseController
                     ";
                 }
             ),
-            array(
-                'db' => 'created_at',
-                'dt' => 6
-            )
         );
-        // Tambahkan default order by created_at DESC jika belum ada
+        // Default order by created_at DESC jika belum ada order spesifik
         if (!isset($_GET['order'])) {
-            $_GET['order'] = [['column' => 6, 'dir' => 'desc']]; // Kolom ke-6 adalah created_at
+            $_GET['order'] = [['column' => 5, 'dir' => 'desc']]; // Kolom ke-5 adalah created_at
         }
         return json_encode(
             SSP::simple($_GET, $dbDetails, $table, $primaryKey, $columns)
