@@ -310,24 +310,40 @@
 <?= $this->section('scripts') ?>
 <script>
     function copyToClipboard(text) {
+        var copiedBadge = document.getElementById('linkCopied');
+        var successCallback = function() {
+            if (copiedBadge) {
+                copiedBadge.style.display = 'inline-block';
+                setTimeout(function() {
+                    copiedBadge.style.display = 'none';
+                }, 2500);
+            }
+        };
+
         if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => { showCopiedMessage(); });
+            navigator.clipboard.writeText(text).then(successCallback).catch(function() {
+                fallbackCopy(text, successCallback);
+            });
         } else {
-            var input = document.createElement('input');
-            input.style.position = 'absolute';
-            input.style.left = '-9999px';
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
-            document.execCommand('copy');
-            document.body.removeChild(input);
-            showCopiedMessage();
+            fallbackCopy(text, successCallback);
         }
     }
-    function showCopiedMessage() {
-        var el = document.getElementById('linkCopied');
-        el.style.display = 'inline';
-        setTimeout(function() { el.style.display = 'none'; }, 2000);
+
+    function fallbackCopy(text, cb) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            if (cb) cb();
+        } catch (err) {
+            console.error('Copy failed', err);
+        }
+        document.body.removeChild(textArea);
     }
 
     /*
@@ -335,30 +351,11 @@
      *
      * State 1 "static"   : normal flow
      * State 2 "fixed"    : position:fixed, ikuti viewport
-     * State 3 "absolute" : position:absolute relatif .sidebar-col, FREEZE
-     *
-     * setAbsolute() menghitung topRelative dari koordinat ABSOLUT dokumen:
-     *   footerTopAbs    = scrollY + footer.getBoundingClientRect().top
-     *   widgetTopAbs    = footerTopAbs - widgetHeight
-     *   containerTopAbs = scrollY + sidebarCol.getBoundingClientRect().top
-     *   topRelative     = widgetTopAbs - containerTopAbs
-     *
-     * Nilai topRelative adalah koordinat dokumen yang stabil —
-     * tidak berubah saat scroll, tidak perlu update, tidak jitter, tidak overlap.
-     *
-     * leftRelative dihitung dari viewport coords (scrollY cancel):
-     *   leftRelative = widget.getBoundingClientRect().left
-     *                - sidebarCol.getBoundingClientRect().left
-     * Ini kompensasi Bootstrap gutter (padding-left:15px) agar tidak geser.
-     *
-     * Collision check (posisi absolut):
-     *   widgetBottomIfFixed = topOffset + widgetHeight
-     *   footerTopViewport   = footer.getBoundingClientRect().top
-     *   collision jika widgetBottomIfFixed >= footerTopViewport
+     * State 3 "absolute" : position:absolute relatif .sidebar-col, FREEZE di atas footer
      */
     (function () {
         var DESKTOP_BP = 992;
-        var GAP        = 8;
+        var GAP        = 12;
 
         var widget      = document.getElementById('sidebar-random-post');
         var placeholder = document.getElementById('random-post-placeholder');
@@ -373,8 +370,11 @@
         var naturalRect = null;
         var rafPending  = false;
 
-        function getNavH() {
-            return navbar.getBoundingClientRect().height;
+        function getTopOffset() {
+            // Jika navbar tersembunyi (nav-hidden) atau di atas viewport, ambil batas bawah visualnya
+            var navRect = navbar.getBoundingClientRect();
+            var visibleBottom = Math.max(0, navRect.bottom);
+            return visibleBottom + GAP;
         }
 
         function cacheNaturalRect() {
@@ -421,8 +421,8 @@
             /* Posisi absolut footer di dokumen */
             var footerTopAbs = scrollY + footer.getBoundingClientRect().top;
 
-            /* Posisi absolut widget yang diinginkan: tepat di atas footer */
-            var widgetTopAbs = footerTopAbs - naturalRect.height;
+            /* Posisi absolut widget yang diinginkan: tepat di atas footer dengan jeda GAP */
+            var widgetTopAbs = footerTopAbs - naturalRect.height - GAP;
 
             /* Posisi absolut container di dokumen */
             var containerTopAbs = scrollY + sidebarCol.getBoundingClientRect().top;
@@ -448,8 +448,7 @@
             if (!naturalRect) cacheNaturalRect();
 
             var scrollY   = window.scrollY;
-            var navH      = getNavH();
-            var topOffset = navH + GAP;
+            var topOffset = getTopOffset();
             var triggerAt = naturalRect.topAbs - topOffset;
 
             if (scrollY < triggerAt) {
@@ -489,6 +488,15 @@
         update();
 
         window.addEventListener('scroll', onScroll, { passive: true });
+        
+        // Perbarui kalkulasi dimensi saat seluruh asset/gambar selesai dimuat
+        window.addEventListener('load', function () {
+            if (state === 'static') {
+                cacheNaturalRect();
+            }
+            update();
+        });
+
         window.addEventListener('resize', function () {
             setStatic();
             if (window.innerWidth >= DESKTOP_BP) {
@@ -497,42 +505,5 @@
             }
         });
     })();
-
-    function copyToClipboard(text) {
-        var copiedBadge = document.getElementById('linkCopied');
-        var successCallback = function() {
-            if (copiedBadge) {
-                copiedBadge.style.display = 'inline-block';
-                setTimeout(function() {
-                    copiedBadge.style.display = 'none';
-                }, 2500);
-            }
-        };
-
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(successCallback).catch(function() {
-                fallbackCopy(text, successCallback);
-            });
-        } else {
-            fallbackCopy(text, successCallback);
-        }
-    }
-
-    function fallbackCopy(text, cb) {
-        var textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-999999px";
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            if (cb) cb();
-        } catch (err) {
-            console.error('Copy failed', err);
-        }
-        document.body.removeChild(textArea);
-    }
 </script>
 <?= $this->endSection() ?>
