@@ -33,16 +33,16 @@
 <div class="row mb-4">
     <?php
     $statCards = [
-        ['label' => 'Pending',  'key' => 0, 'color' => '#f59e0b', 'icon' => 'fa-clock',        'qs' => '?status=0'],
-        ['label' => 'Approved', 'key' => 1, 'color' => '#10b981', 'icon' => 'fa-check-circle',  'qs' => '?status=1'],
-        ['label' => 'Spam',     'key' => 2, 'color' => '#ef4444', 'icon' => 'fa-ban',            'qs' => '?status=2'],
-        ['label' => 'Trash',    'key' => 3, 'color' => '#6b7280', 'icon' => 'fa-trash',          'qs' => '?status=3'],
+        ['label' => 'Pending',  'key' => 0, 'color' => '#f59e0b', 'icon' => 'fa-clock-o',       'qs' => '?status=0'],
+        ['label' => 'Approved', 'key' => 1, 'color' => '#10b981', 'icon' => 'fa-check-circle', 'qs' => '?status=1'],
+        ['label' => 'Spam',     'key' => 2, 'color' => '#ef4444', 'icon' => 'fa-ban',           'qs' => '?status=2'],
+        ['label' => 'Trash',    'key' => 3, 'color' => '#6b7280', 'icon' => 'fa-trash',         'qs' => '?status=3'],
     ];
     foreach ($statCards as $sc):
         $active = $filter === $sc['key'] ? 'cm-stat-active' : '';
     ?>
-    <div class="col-6 col-md-3 mb-3">
-        <a href="<?= route_to('admin.comments') . $sc['qs'] ?>" class="cm-stat <?= $active ?>" style="--c:<?= $sc['color'] ?>">
+    <div class="col-6 col-md-3 mb-3 d-flex">
+        <a href="<?= route_to('admin.comments') . $sc['qs'] ?>" class="cm-stat w-100 h-100 <?= $active ?>" style="--c:<?= $sc['color'] ?>">
             <i class="fa <?= $sc['icon'] ?> cm-stat-icon"></i>
             <div class="cm-stat-num"><?= $counts[$sc['key']] ?? 0 ?></div>
             <div class="cm-stat-label"><?= $sc['label'] ?></div>
@@ -261,16 +261,33 @@
 /* ── Stat cards ─────────────────────────────────────────── */
 .cm-stat {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
-    padding: 1.1rem .75rem; text-decoration: none; color: inherit;
-    transition: box-shadow .2s, border-color .2s;
+    background: #fff;
+    border: 1px solid #e5e7eb;
     border-top: 3px solid var(--c);
+    border-radius: 10px;
+    padding: 1.1rem .75rem;
+    text-decoration: none;
+    color: inherit;
+    box-sizing: border-box;
+    min-height: 110px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
-.cm-stat:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); text-decoration: none; color: inherit; }
-.cm-stat-active { box-shadow: 0 4px 16px rgba(0,0,0,.1); border-color: var(--c); }
-.cm-stat-icon { font-size: 1.4rem; color: var(--c); margin-bottom: 6px; }
+.cm-stat:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .08);
+    transform: translateY(-2px);
+    text-decoration: none;
+    color: inherit;
+}
+.cm-stat-active {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .1);
+    border: 1.5px solid var(--c);
+    border-top: 3px solid var(--c);
+    background: #fafbff;
+}
+.cm-stat-icon { font-size: 1.35rem; color: var(--c); margin-bottom: 6px; height: 22px; display: flex; align-items: center; justify-content: center; }
 .cm-stat-num  { font-size: 1.6rem; font-weight: 800; color: #111; line-height: 1; }
-.cm-stat-label{ font-size: .75rem; color: #6b7280; margin-top: 3px; font-weight: 500; }
+.cm-stat-label{ font-size: .8rem; color: #6b7280; margin-top: 4px; font-weight: 500; }
 
 /* ── Toolbar ────────────────────────────────────────────── */
 .cm-toolbar {
