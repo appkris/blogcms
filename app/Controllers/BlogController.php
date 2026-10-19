@@ -213,9 +213,136 @@ class BlogController extends BaseController
         }
     }
     public function about()
-        {
-            return view('frontend/pages/about');
+    {
+        return view('frontend/pages/about');
+    }
+
+    /**
+     * Generate dynamic sitemap.xml for search engines
+     */
+    public function sitemap(): ResponseInterface
+    {
+        $postModel        = new Post();
+        $subCategoryModel = new SubCategory();
+        $pageModel        = new \App\Models\Page();
+
+        $posts        = $postModel->asObject()->where('visibility', 1)->orderBy('updated_at', 'DESC')->findAll();
+        $subCategories = $subCategoryModel->asObject()->findAll();
+        $pages        = $pageModel->asObject()->where('status', 1)->findAll();
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' . "\n";
+        $xml .= '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">' . "\n";
+
+        // Homepage
+        $latestPostTime = !empty($posts[0]->updated_at) ? date('c', strtotime($posts[0]->updated_at)) : date('c');
+        $xml .= "  <url>\n";
+        $xml .= '    <loc>' . htmlspecialchars(base_url(), ENT_XML1, 'UTF-8') . "</loc>\n";
+        $xml .= '    <lastmod>' . $latestPostTime . "</lastmod>\n";
+        $xml .= "    <changefreq>daily</changefreq>\n";
+        $xml .= "    <priority>1.0</priority>\n";
+        $xml .= "  </url>\n";
+
+        // Static / Public pages
+        $xml .= "  <url>\n";
+        $xml .= '    <loc>' . htmlspecialchars(route_to('contact-us'), ENT_XML1, 'UTF-8') . "</loc>\n";
+        $xml .= "    <changefreq>monthly</changefreq>\n";
+        $xml .= "    <priority>0.5</priority>\n";
+        $xml .= "  </url>\n";
+
+        // CMS Dynamic Pages
+        foreach ($pages as $p) {
+            $pageMod = !empty($p->updated_at) ? date('c', strtotime($p->updated_at)) : date('c');
+            $xml .= "  <url>\n";
+            $xml .= '    <loc>' . htmlspecialchars(route_to('page-show', $p->slug), ENT_XML1, 'UTF-8') . "</loc>\n";
+            $xml .= '    <lastmod>' . $pageMod . "</lastmod>\n";
+            $xml .= "    <changefreq>monthly</changefreq>\n";
+            $xml .= "    <priority>0.6</priority>\n";
+            $xml .= "  </url>\n";
         }
 
-    
+        // Categories
+        foreach ($subCategories as $cat) {
+            $xml .= "  <url>\n";
+            $xml .= '    <loc>' . htmlspecialchars(route_to('category-post', $cat->slug), ENT_XML1, 'UTF-8') . "</loc>\n";
+            $xml .= "    <changefreq>weekly</changefreq>\n";
+            $xml .= "    <priority>0.7</priority>\n";
+            $xml .= "  </url>\n";
+        }
+
+        // Posts
+        foreach ($posts as $item) {
+            $postMod = !empty($item->updated_at) ? date('c', strtotime($item->updated_at)) : (!empty($item->created_at) ? date('c', strtotime($item->created_at)) : date('c'));
+            $xml .= "  <url>\n";
+            $xml .= '    <loc>' . htmlspecialchars(route_to('read-post', $item->slug), ENT_XML1, 'UTF-8') . "</loc>\n";
+            $xml .= '    <lastmod>' . $postMod . "</lastmod>\n";
+            $xml .= "    <changefreq>weekly</changefreq>\n";
+            $xml .= "    <priority>0.8</priority>\n";
+
+            if (!empty($item->featured_image)) {
+                $xml .= "    <image:image>\n";
+                $xml .= '      <image:loc>' . htmlspecialchars(base_url('images/posts/' . $item->featured_image), ENT_XML1, 'UTF-8') . "</image:loc>\n";
+                $xml .= '      <image:title>' . htmlspecialchars($item->title, ENT_XML1, 'UTF-8') . "</image:title>\n";
+                $xml .= "    </image:image>\n";
+            }
+
+            $xml .= "  </url>\n";
+        }
+
+        $xml .= '</urlset>';
+
+        return $this->response
+                    ->setHeader('Content-Type', 'text/xml; charset=UTF-8')
+                    ->setBody($xml);
+    }
+
+    /**
+     * Generate dynamic RSS 2.0 Feed for readers and syndication
+     */
+    public function feed(): ResponseInterface
+    {
+        $postModel = new Post();
+        $posts     = $postModel->asObject()
+                               ->where('visibility', 1)
+                               ->orderBy('created_at', 'DESC')
+                               ->findAll(20);
+
+        $settings = get_settings();
+        $title    = !empty($settings->blog_title) ? $settings->blog_title : 'Blog';
+        $desc     = !empty($settings->blog_meta_description) ? $settings->blog_meta_description : $title;
+
+        $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+        $xml .= '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">' . "\n";
+        $xml .= "  <channel>\n";
+        $xml .= '    <title>' . htmlspecialchars($title, ENT_XML1, 'UTF-8') . "</title>\n";
+        $xml .= '    <link>' . htmlspecialchars(base_url(), ENT_XML1, 'UTF-8') . "</link>\n";
+        $xml .= '    <description>' . htmlspecialchars($desc, ENT_XML1, 'UTF-8') . "</description>\n";
+        $xml .= '    <language>id-ID</language>\n';
+        $xml .= '    <atom:link href="' . htmlspecialchars(site_url('feed'), ENT_XML1, 'UTF-8') . '" rel="self" type="application/rss+xml" />' . "\n";
+
+        if (!empty($posts[0]->created_at)) {
+            $xml .= '    <lastBuildDate>' . date(DATE_RSS, strtotime($posts[0]->created_at)) . "</lastBuildDate>\n";
+        }
+
+        foreach ($posts as $item) {
+            $postUrl = route_to('read-post', $item->slug);
+            $excerpt = !empty($item->meta_description) ? $item->meta_description : word_limiter(strip_tags($item->content ?? ''), 40);
+            $pubDate = !empty($item->created_at) ? date(DATE_RSS, strtotime($item->created_at)) : date(DATE_RSS);
+
+            $xml .= "    <item>\n";
+            $xml .= '      <title>' . htmlspecialchars($item->title, ENT_XML1, 'UTF-8') . "</title>\n";
+            $xml .= '      <link>' . htmlspecialchars($postUrl, ENT_XML1, 'UTF-8') . "</link>\n";
+            $xml .= '      <guid isPermaLink="true">' . htmlspecialchars($postUrl, ENT_XML1, 'UTF-8') . "</guid>\n";
+            $xml .= '      <description>' . htmlspecialchars($excerpt, ENT_XML1, 'UTF-8') . "</description>\n";
+            $xml .= '      <pubDate>' . $pubDate . "</pubDate>\n";
+            $xml .= "    </item>\n";
+        }
+
+        $xml .= "  </channel>\n";
+        $xml .= '</rss>';
+
+        return $this->response
+                    ->setHeader('Content-Type', 'application/rss+xml; charset=UTF-8')
+                    ->setBody($xml);
+    }
 }

@@ -201,19 +201,25 @@
             <?php endif ?>
         </article>
         <!-- Share buttons -->
-            <div class="share-buttons mb-3">
-                <span class="share-text me-2">?Bagikan:</span>
-                <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($post->title) ?>" target="_blank" class="btn-share twitter" title="Share on Twitter">
-                    <i class="fab fa-twitter"></i>
-                </a>
-                <a href="https://api.whatsapp.com/send?text=<?= urlencode($post->title . ' ' . current_url()) ?>" target="_blank" class="btn-share whatsapp" title="Share on WhatsApp">
-                    <i class="fab fa-whatsapp"></i>
-                </a>
-                <a href="#" class="btn-share copy-link" title="Copy Link" onclick="copyToClipboard('<?= current_url() ?>'); return false;">
-                    <i class="fas fa-link"></i>
-                </a>
-                <span id="linkCopied" class="link-copied">Link copied!</span>
-            </div>
+        <div class="share-buttons my-4 p-3 bg-light rounded d-flex align-items-center flex-wrap gap-2">
+            <span class="share-text fw-bold text-secondary me-2"><i class="fas fa-share-alt me-1"></i> Bagikan:</span>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode(current_url()) ?>" target="_blank" rel="noopener noreferrer" class="btn-share facebook" style="background:#1877f2" title="Bagikan ke Facebook">
+                <i class="fab fa-facebook-f"></i>
+            </a>
+            <a href="https://twitter.com/intent/tweet?url=<?= urlencode(current_url()) ?>&text=<?= urlencode($post->title) ?>" target="_blank" rel="noopener noreferrer" class="btn-share twitter" title="Bagikan ke X (Twitter)">
+                <i class="fab fa-x-twitter"></i>
+            </a>
+            <a href="https://api.whatsapp.com/send?text=<?= urlencode($post->title . ' ' . current_url()) ?>" target="_blank" rel="noopener noreferrer" class="btn-share whatsapp" title="Bagikan ke WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+            </a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url=<?= urlencode(current_url()) ?>" target="_blank" rel="noopener noreferrer" class="btn-share linkedin" style="background:#0a66c2" title="Bagikan ke LinkedIn">
+                <i class="fab fa-linkedin-in"></i>
+            </a>
+            <button type="button" class="btn-share copy-link border-0" title="Salin Tautan" onclick="copyToClipboard('<?= current_url() ?>');">
+                <i class="fas fa-link"></i>
+            </button>
+            <span id="linkCopied" class="link-copied text-success fw-bold ms-2" style="display:none;"><i class="fas fa-check-circle"></i> Tautan disalin!</span>
+        </div>
         <div class="prev-next-posts mt-3 mb-3">
             <div class="row justify-content-between p-4">
                 <div class="col-md-6 mb-2">
@@ -491,5 +497,42 @@
             }
         });
     })();
+
+    function copyToClipboard(text) {
+        var copiedBadge = document.getElementById('linkCopied');
+        var successCallback = function() {
+            if (copiedBadge) {
+                copiedBadge.style.display = 'inline-block';
+                setTimeout(function() {
+                    copiedBadge.style.display = 'none';
+                }, 2500);
+            }
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(successCallback).catch(function() {
+                fallbackCopy(text, successCallback);
+            });
+        } else {
+            fallbackCopy(text, successCallback);
+        }
+    }
+
+    function fallbackCopy(text, cb) {
+        var textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            if (cb) cb();
+        } catch (err) {
+            console.error('Copy failed', err);
+        }
+        document.body.removeChild(textArea);
+    }
 </script>
 <?= $this->endSection() ?>

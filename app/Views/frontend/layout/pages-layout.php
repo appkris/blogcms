@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <?= $this->renderSection('page_meta') ?>
     <link rel="shortcut icon" href="/images/blogs/<?= esc(get_settings()->blog_favicon) ?>" type="image/x-icon">
+    <link rel="alternate" type="application/rss+xml" title="<?= esc(get_settings()->blog_title) ?> RSS Feed" href="<?= site_url('feed') ?>">
 
     <!-- theme meta -->
     <meta name="theme-name" content="reporter" />

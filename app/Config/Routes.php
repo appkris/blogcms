@@ -17,6 +17,8 @@ $routes->get('search', 'BlogController::searchPost', ['as' => 'search-post']);
 $routes->get('contact-us', 'BlogController::contactUs', ['as' => 'contact-us']);
 $routes->post('contact-us', 'BlogController::contactUsForm', ['as' => 'contact-us-form']);
 $routes->get('about', 'AdminController::about', ['as' => 'about']);
+$routes->get('sitemap.xml', 'BlogController::sitemap', ['as' => 'sitemap']);
+$routes->get('feed', 'BlogController::feed', ['as' => 'rss-feed']);
 
 
 $routes->group('admin', static function ($routes) {
