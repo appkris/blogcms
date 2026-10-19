@@ -89,8 +89,9 @@ class CommentController extends BaseController
     {
         $model    = new Comment();
         $filter   = $this->request->getGet('status');
-        $status   = $filter !== null ? (int) $filter : null;
-        $comments = $model->getForAdmin($status, 20);
+        $search   = trim((string) ($this->request->getGet('q') ?? ''));
+        $status   = $filter !== null && $filter !== '' ? (int) $filter : null;
+        $comments = $model->getForAdmin($status, 20, $search);
         $counts   = $model->countByStatus();
 
         return view('backend/pages/comments', [
@@ -99,6 +100,7 @@ class CommentController extends BaseController
             'pager'     => $model->pager,
             'counts'    => $counts,
             'filter'    => $status,
+            'search'    => $search,
         ]);
     }
 
@@ -107,6 +109,9 @@ class CommentController extends BaseController
     public function approve($id)
     {
         (new Comment())->update($id, ['status' => Comment::STATUS_APPROVED]);
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 1, 'msg' => 'Komentar disetujui.']);
+        }
         return redirect()->back()->with('success', 'Komentar disetujui.');
     }
 
@@ -115,6 +120,9 @@ class CommentController extends BaseController
     public function spam($id)
     {
         (new Comment())->update($id, ['status' => Comment::STATUS_SPAM]);
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 1, 'msg' => 'Komentar ditandai sebagai spam.']);
+        }
         return redirect()->back()->with('success', 'Komentar ditandai spam.');
     }
 
@@ -123,6 +131,9 @@ class CommentController extends BaseController
     public function trash($id)
     {
         (new Comment())->update($id, ['status' => Comment::STATUS_TRASH]);
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 1, 'msg' => 'Komentar dipindahkan ke kotak sampah.']);
+        }
         return redirect()->back()->with('success', 'Komentar dipindah ke trash.');
     }
 
@@ -131,6 +142,9 @@ class CommentController extends BaseController
     public function destroy($id)
     {
         (new Comment())->delete($id);
+        if ($this->request->isAJAX()) {
+            return $this->response->setJSON(['status' => 1, 'msg' => 'Komentar dihapus permanen.']);
+        }
         return redirect()->back()->with('success', 'Komentar dihapus permanen.');
     }
 
@@ -150,13 +164,18 @@ class CommentController extends BaseController
             return $this->response->setJSON(['status' => 0, 'msg' => 'Data tidak lengkap.']);
         }
 
-        $processed = comment_process($text, 'Admin', '', true);
+        // Ambil nama & email admin yang sedang login secara dinamis
+        $currentUser = get_user();
+        $adminName   = $currentUser ? $currentUser->name : 'Administrator';
+        $adminEmail  = $currentUser ? $currentUser->email : get_settings()->blog_email;
+
+        $processed = comment_process($text, $adminName, '', true);
 
         (new Comment())->insert([
             'post_id'    => $postId,
             'parent_id'  => $parentId,
-            'name'       => 'Admin',
-            'email'      => get_settings()->blog_email,
+            'name'       => $adminName,
+            'email'      => $adminEmail,
             'comment'    => $processed['text'],
             'is_admin'   => 1,
             'status'     => Comment::STATUS_APPROVED,
@@ -190,5 +209,18 @@ class CommentController extends BaseController
         }
 
         return redirect()->back()->with('success', 'Aksi bulk berhasil dijalankan.');
+    }
+
+    // ── BACKEND: Kosongkan Trash / Spam ───────────────────────────────────
+
+    public function emptyTrash()
+    {
+        $target = $this->request->getPost('target') ?? 'trash';
+        $status = ($target === 'spam') ? Comment::STATUS_SPAM : Comment::STATUS_TRASH;
+
+        (new Comment())->where('status', $status)->delete();
+
+        $label = ($target === 'spam') ? 'folder Spam' : 'Kotak Sampah (Trash)';
+        return redirect()->back()->with('success', "Semua komentar di {$label} berhasil dibersihkan.");
     }
 }

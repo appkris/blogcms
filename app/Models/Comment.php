@@ -67,15 +67,26 @@ class Comment extends Model
                     ->countAllResults();
     }
 
-    /** Ambil semua untuk admin dengan filter opsional */
-    public function getForAdmin(?int $status = null, int $perPage = 20): array
+    /** Ambil semua untuk admin dengan filter status & search opsional */
+    public function getForAdmin(?int $status = null, int $perPage = 20, string $search = ''): array
     {
         $q = $this->select('comments.*, posts.title as post_title, posts.slug as post_slug')
                   ->join('posts', 'posts.id = comments.post_id', 'left')
                   ->orderBy('comments.created_at', 'DESC');
+
         if ($status !== null) {
             $q->where('comments.status', $status);
         }
+
+        if (!empty($search)) {
+            $q->groupStart()
+              ->like('comments.name', $search)
+              ->orLike('comments.email', $search)
+              ->orLike('comments.comment', $search)
+              ->orLike('posts.title', $search)
+              ->groupEnd();
+        }
+
         return $q->paginate($perPage);
     }
 

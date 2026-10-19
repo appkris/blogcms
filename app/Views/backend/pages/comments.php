@@ -53,6 +53,51 @@
 
 <div class="pd-20 card-box mb-30">
 
+    <!-- Search & Filter Bar -->
+    <div class="row align-items-center mb-3">
+        <div class="col-md-6 mb-2 mb-md-0">
+            <form method="get" action="<?= route_to('admin.comments') ?>" class="d-flex align-items-center">
+                <?php if ($filter !== null): ?>
+                    <input type="hidden" name="status" value="<?= (int) $filter ?>">
+                <?php endif; ?>
+                <div class="input-group">
+                    <input type="text" name="q" class="form-control form-control-sm" 
+                           placeholder="Cari pengirim, email, komentar, atau post..." 
+                           value="<?= esc($search ?? '') ?>">
+                    <div class="input-group-append">
+                        <button class="btn btn-sm btn-primary" type="submit">
+                            <i class="fa fa-search"></i> Cari
+                        </button>
+                    </div>
+                </div>
+                <?php if (!empty($search)): ?>
+                    <a href="<?= route_to('admin.comments') . ($filter !== null ? '?status=' . $filter : '') ?>" class="btn btn-sm btn-link text-danger ml-2 text-nowrap">
+                        <i class="fa fa-times"></i> Reset
+                    </a>
+                <?php endif; ?>
+            </form>
+        </div>
+        <div class="col-md-6 text-md-right">
+            <?php if ($filter === 3 && ($counts[3] ?? 0) > 0): ?>
+            <form method="post" action="<?= route_to('admin.comments.empty-trash') ?>" class="d-inline" onsubmit="return confirm('Kosongkan semua komentar di Kotak Sampah? Tindakan ini tidak dapat dibatalkan.');">
+                <?= csrf_field() ?>
+                <input type="hidden" name="target" value="trash">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="fa fa-trash"></i> Kosongkan Kotak Sampah
+                </button>
+            </form>
+            <?php elseif ($filter === 2 && ($counts[2] ?? 0) > 0): ?>
+            <form method="post" action="<?= route_to('admin.comments.empty-trash') ?>" class="d-inline" onsubmit="return confirm('Hapus permanen semua komentar Spam? Tindakan ini tidak dapat dibatalkan.');">
+                <?= csrf_field() ?>
+                <input type="hidden" name="target" value="spam">
+                <button type="submit" class="btn btn-sm btn-outline-danger">
+                    <i class="fa fa-ban"></i> Bersihkan Semua Spam
+                </button>
+            </form>
+            <?php endif; ?>
+        </div>
+    </div>
+
     <!-- Toolbar -->
     <form method="post" action="<?= route_to('admin.comments.bulk') ?>" id="bulk-form">
         <?= csrf_field() ?>
@@ -72,12 +117,12 @@
                         onclick="return confirm('Jalankan aksi pada komentar terpilih?')">Terapkan</button>
             </div>
             <div class="cm-toolbar-right">
-                <?php if ($filter !== null): ?>
+                <?php if ($filter !== null || !empty($search)): ?>
                 <a href="<?= route_to('admin.comments') ?>" class="cm-btn cm-btn-ghost">
-                    <i class="fa fa-times mr-1"></i> Hapus filter
+                    <i class="fa fa-times mr-1"></i> Reset Semua Filter
                 </a>
                 <?php endif ?>
-                <span class="cm-total-label">
+                <span class="cm-total-label font-12 text-muted">
                     <?= count($comments) ?> komentar ditampilkan
                 </span>
             </div>
@@ -87,7 +132,7 @@
         <?php if (empty($comments)): ?>
         <div class="cm-empty">
             <i class="fa fa-comments-o fa-3x text-muted mb-3"></i>
-            <p class="text-muted">Tidak ada komentar untuk ditampilkan.</p>
+            <p class="text-muted">Tidak ada komentar untuk ditampilkan<?= !empty($search) ? ' dengan kata kunci tersebut' : '' ?>.</p>
         </div>
         <?php else: ?>
         <div class="cm-table-wrap">
@@ -109,7 +154,7 @@
                         $statusMap  = [0 => ['Pending','cm-s-pending'], 1 => ['Approved','cm-s-approved'], 2 => ['Spam','cm-s-spam'], 3 => ['Trash','cm-s-trash']];
                         [$sLabel, $sClass] = $statusMap[$c['status']] ?? ['?',''];
                     ?>
-                    <tr class="cm-row <?= $c['is_admin'] ? 'cm-row-admin' : '' ?> <?= $c['status'] == 0 ? 'cm-row-pending' : '' ?>">
+                    <tr class="cm-row <?= $c['is_admin'] ? 'cm-row-admin' : '' ?> <?= $c['status'] == 0 ? 'cm-row-pending' : '' ?>" id="comment-row-<?= $c['id'] ?>">
                         <td><input type="checkbox" name="ids[]" value="<?= $c['id'] ?>"></td>
                         <td>
                             <div class="cm-sender">
@@ -153,31 +198,46 @@
                                 <i class="fa fa-external-link fa-xs ml-1"></i>
                             </a>
                         </td>
-                        <td><span class="cm-status <?= $sClass ?>"><?= $sLabel ?></span></td>
+                        <td><span class="cm-status <?= $sClass ?>" id="status-badge-<?= $c['id'] ?>"><?= $sLabel ?></span></td>
                         <td class="cm-date"><?= date('d/m/y\nH:i', strtotime($c['created_at'])) ?></td>
                         <td>
                             <div class="cm-actions">
                                 <?php if ($c['status'] != 1): ?>
-                                <a href="<?= route_to('admin.comments.approve', $c['id']) ?>"
-                                   class="cm-action-btn cm-action-approve" title="Setujui">
+                                <button type="button" class="cm-action-btn cm-action-approve btn-ajax-action" 
+                                        data-url="<?= route_to('admin.comments.approve', $c['id']) ?>"
+                                        data-row="<?= $c['id'] ?>"
+                                        data-action="approve" title="Setujui">
                                     <i class="fa fa-check"></i>
-                                </a>
+                                </button>
                                 <?php endif ?>
                                 <button type="button" class="cm-action-btn cm-action-reply btn-toggle-reply"
                                         data-target="rb-<?= $c['id'] ?>" title="Balas">
                                     <i class="fa fa-reply"></i>
                                 </button>
                                 <?php if ($c['status'] != 2): ?>
-                                <a href="<?= route_to('admin.comments.spam', $c['id']) ?>"
-                                   class="cm-action-btn cm-action-spam" title="Spam">
+                                <button type="button" class="cm-action-btn cm-action-spam btn-ajax-action" 
+                                        data-url="<?= route_to('admin.comments.spam', $c['id']) ?>"
+                                        data-row="<?= $c['id'] ?>"
+                                        data-action="spam" title="Spam">
                                     <i class="fa fa-ban"></i>
-                                </a>
+                                </button>
                                 <?php endif ?>
-                                <a href="<?= route_to('admin.comments.destroy', $c['id']) ?>"
-                                   class="cm-action-btn cm-action-delete" title="Hapus"
-                                   onclick="return confirm('Hapus permanen komentar ini?')">
+                                <?php if ($c['status'] != 3): ?>
+                                <button type="button" class="cm-action-btn cm-action-trash btn-ajax-action" 
+                                        data-url="<?= route_to('admin.comments.trash', $c['id']) ?>"
+                                        data-row="<?= $c['id'] ?>"
+                                        data-action="trash" title="Pindah ke Trash" style="color:#6b7280;">
+                                    <i class="fa fa-trash-o"></i>
+                                </button>
+                                <?php else: ?>
+                                <button type="button" class="cm-action-btn cm-action-delete btn-ajax-action" 
+                                        data-url="<?= route_to('admin.comments.destroy', $c['id']) ?>"
+                                        data-row="<?= $c['id'] ?>"
+                                        data-action="destroy"
+                                        data-confirm="Hapus permanen komentar ini?" title="Hapus Permanen">
                                     <i class="fa fa-trash"></i>
-                                </a>
+                                </button>
+                                <?php endif ?>
                             </div>
                         </td>
                     </tr>
@@ -369,6 +429,71 @@ document.addEventListener('click', function (e) {
         }
     })
     .finally(() => { btn.disabled = false; btn.textContent = 'Kirim'; });
+});
+
+// Single Action AJAX Handler (Approve, Spam, Trash, Destroy)
+document.addEventListener('click', function (e) {
+    const btn = e.target.closest('.btn-ajax-action');
+    if (!btn) return;
+
+    const url     = btn.dataset.url;
+    const rowId   = btn.dataset.row;
+    const action  = btn.dataset.action;
+    const confirm = btn.dataset.confirm;
+
+    if (confirm && !window.confirm(confirm)) {
+        return;
+    }
+
+    btn.disabled = true;
+
+    fetch(url, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.status === 1) {
+            if (typeof toastr !== 'undefined') {
+                toastr.success(res.msg);
+            }
+
+            const row = document.getElementById('comment-row-' + rowId);
+            if (action === 'destroy' || action === 'trash') {
+                if (row) {
+                    row.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(20px)';
+                    setTimeout(() => row.remove(), 400);
+                }
+            } else if (action === 'approve') {
+                const badge = document.getElementById('status-badge-' + rowId);
+                if (badge) {
+                    badge.className = 'cm-status cm-s-approved';
+                    badge.textContent = 'Approved';
+                }
+                btn.remove();
+            } else if (action === 'spam') {
+                const badge = document.getElementById('status-badge-' + rowId);
+                if (badge) {
+                    badge.className = 'cm-status cm-s-spam';
+                    badge.textContent = 'Spam';
+                }
+                btn.remove();
+            }
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            if (typeof toastr !== 'undefined') {
+                toastr.error(res.msg || 'Gagal memproses aksi.');
+            } else {
+                alert(res.msg || 'Gagal memproses.');
+            }
+            btn.disabled = false;
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        location.href = url; // Fallback ke normal redirect jika ada network error
+    });
 });
 </script>
 <?= $this->endSection() ?>

@@ -86,6 +86,7 @@ $routes->group('admin', static function ($routes) {
         $routes->get('comments/destroy/(:num)', 'CommentController::destroy/$1', ['as' => 'admin.comments.destroy']);
         $routes->post('comments/reply', 'CommentController::reply', ['as' => 'admin.comments.reply']);
         $routes->post('comments/bulk', 'CommentController::bulk', ['as' => 'admin.comments.bulk']);
+        $routes->post('comments/empty-trash', 'CommentController::emptyTrash', ['as' => 'admin.comments.empty-trash']);
     });
 
     $routes->group('', ['filter' => 'cifilter:guest'], static function ($routes) {
