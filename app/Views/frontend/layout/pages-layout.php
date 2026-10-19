@@ -5,10 +5,8 @@
     <title><?= isset($pageTitle) ? $pageTitle : "" ?></title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
-    <meta name="description" content="<?= get_settings()->blog_meta_description ?>">
-    <meta name="author" content="<?= get_settings()->blog_title ?>">
     <?= $this->renderSection('page_meta') ?>
-    <link rel="shortcut icon" href="/images/blogs/<?= get_settings()->blog_favicon ?>" type="image/x-icon">
+    <link rel="shortcut icon" href="/images/blogs/<?= esc(get_settings()->blog_favicon) ?>" type="image/x-icon">
 
     <!-- theme meta -->
     <meta name="theme-name" content="reporter" />

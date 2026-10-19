@@ -1,22 +1,48 @@
 <?= $this->extend('frontend/layout/pages-layout.php') ?>
 <?= $this->section('content') ?>
 <?= $this->section('page_meta') ?>
-<meta name="robots" content="index,follow" />
-<meta name="title" content="<?= get_settings()->blog_title ?>" />
-<meta name="description" content="<?= get_settings()->blog_meta_description ?>" />
-<meta name="author" content="<?= get_settings()->blog_title ?>" />
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+<meta name="description" content="<?= esc(get_settings()->blog_meta_description) ?>" />
+<meta name="keywords" content="<?= esc(get_settings()->blog_meta_keywords) ?>" />
+<meta name="author" content="<?= esc(get_settings()->blog_title) ?>" />
 <link rel="canonical" href="<?= base_url() ?>" />
-<meta property="og:title" content="<?= get_settings()->blog_title ?>" />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:locale" content="id_ID" />
 <meta property="og:type" content="website" />
-<meta property="og:description" content="<?= get_settings()->blog_meta_description ?>" />
+<meta property="og:site_name" content="<?= esc(get_settings()->blog_title) ?>" />
+<meta property="og:title" content="<?= esc(get_settings()->blog_title) ?>" />
+<meta property="og:description" content="<?= esc(get_settings()->blog_meta_description) ?>" />
 <meta property="og:url" content="<?= base_url() ?>" />
+<?php if (!empty(get_settings()->blog_logo)): ?>
 <meta property="og:image" content="<?= base_url('images/blogs/' . get_settings()->blog_logo) ?>" />
-<meta name="twitter:domain" content="<?= base_url() ?>" />
-<meta name="twitter:card" content="summary" />
-<meta name="twitter:title" property="og:title" itemprop="name" content="<?= get_settings()->blog_title ?>" />
-<meta name="twitter:description" property="og:description" itemprop="description"
-  content="<?= get_settings()->blog_meta_description ?>" />
+<meta property="og:image:alt" content="<?= esc(get_settings()->blog_title) ?>" />
+<?php endif; ?>
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:domain" content="<?= parse_url(base_url(), PHP_URL_HOST) ?>" />
+<meta name="twitter:title" content="<?= esc(get_settings()->blog_title) ?>" />
+<meta name="twitter:description" content="<?= esc(get_settings()->blog_meta_description) ?>" />
+<?php if (!empty(get_settings()->blog_logo)): ?>
 <meta name="twitter:image" content="<?= base_url('images/blogs/' . get_settings()->blog_logo) ?>" />
+<?php endif; ?>
+
+<!-- JSON-LD Structured Data: WebSite & SearchAction -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": <?= json_encode(get_settings()->blog_title) ?>,
+  "url": <?= json_encode(base_url()) ?>,
+  "description": <?= json_encode(get_settings()->blog_meta_description) ?>,
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "<?= base_url('search?q=') ?>{search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
 <?= $this->endSection() ?>
 
 <div class="row no-gutters-lg">

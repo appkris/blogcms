@@ -8,13 +8,14 @@ use App\Models\SubCategory;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Services;
 use App\Models\Author;
+use App\Models\Comment;
 
 class BlogController extends BaseController
 {
     protected $helpers = ['url', 'form', 'CIMail', 'CIFunctions', 'text'];
     public function index()
     {
-        $authorModel = new \App\Models\Author();
+        $authorModel = new Author();
         $postModel   = new Post();
         $perPage     = 5;
         $currentPage = (int) ($this->request->getGet('page') ?? 1);
@@ -46,10 +47,10 @@ class BlogController extends BaseController
 
     public function readPost($slug)
 {
-    $post = new \App\Models\Post();
-    $authorModel = new \App\Models\Author();
-    $subCategoryModel = new \App\Models\SubCategory();
-    $commentModel = new \App\Models\Comment();
+    $post = new Post();
+    $authorModel = new Author();
+    $subCategoryModel = new SubCategory();
+    $commentModel = new Comment();
 
     $post_data = $post->asObject()->where('slug', $slug)->first();
 

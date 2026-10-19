@@ -1,4 +1,21 @@
 <?= $this->extend('frontend/layout/pages-layout.php') ?>
+<?= $this->section('page_meta') ?>
+<meta name="robots" content="index,follow" />
+<meta name="description" content="<?= esc($pageTitle) ?> - Kumpulan artikel dan tutorial di <?= esc(get_settings()->blog_title) ?>" />
+<link rel="canonical" href="<?= current_url() ?>" />
+<meta property="og:locale" content="id_ID" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="<?= esc(get_settings()->blog_title) ?>" />
+<meta property="og:title" content="<?= esc($pageTitle) ?>" />
+<meta property="og:description" content="<?= esc($pageTitle) ?> - Kumpulan artikel dan tutorial di <?= esc(get_settings()->blog_title) ?>" />
+<meta property="og:url" content="<?= current_url() ?>" />
+<?php if (!empty(get_settings()->blog_logo)): ?>
+<meta property="og:image" content="<?= base_url('images/blogs/' . get_settings()->blog_logo) ?>" />
+<?php endif; ?>
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="<?= esc($pageTitle) ?>" />
+<meta name="twitter:description" content="<?= esc($pageTitle) ?> - Kumpulan artikel dan tutorial di <?= esc(get_settings()->blog_title) ?>" />
+<?= $this->endSection() ?>
 <?= $this->section('content') ?>
 
 <div class="row">

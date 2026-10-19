@@ -1,4 +1,9 @@
 <?= $this->extend('frontend/layout/pages-layout.php') ?>
+<?= $this->section('page_meta') ?>
+<meta name="robots" content="noindex,follow" />
+<meta name="description" content="<?= esc($pageTitle) ?> di <?= esc(get_settings()->blog_title) ?>" />
+<link rel="canonical" href="<?= current_url() ?>" />
+<?= $this->endSection() ?>
 <?= $this->section('content') ?>
 
 <div class="row">

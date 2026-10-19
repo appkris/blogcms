@@ -1,21 +1,124 @@
 <?= $this->extend('frontend/layout/pages-layout.php') ?>
 <?= $this->section('page_meta') ?>
-<meta name="description" content="<?= $post->meta_description ?>" />
-<meta name="keyword" content="<?= $post->meta_keywords ?>" />
+<?php 
+    $postDescription = !empty($post->meta_description) ? $post->meta_description : word_limiter(strip_tags($post->content ?? ''), 30);
+    $postKeywords = !empty($post->meta_keywords) ? $post->meta_keywords : (!empty($post->tags) ? $post->tags : '');
+    $imageUrl = !empty($post->featured_image) ? base_url('images/posts/' . $post->featured_image) : (!empty(get_settings()->blog_logo) ? base_url('images/blogs/' . get_settings()->blog_logo) : '');
+    $authorName = !empty($author->name) ? $author->name : get_settings()->blog_title;
+    $publishedDate = !empty($post->created_at) ? date('c', strtotime($post->created_at)) : '';
+    $modifiedDate = !empty($post->updated_at) ? date('c', strtotime($post->updated_at)) : $publishedDate;
+?>
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+<meta name="description" content="<?= esc($postDescription) ?>" />
+<?php if (!empty($postKeywords)): ?>
+<meta name="keywords" content="<?= esc($postKeywords) ?>" />
+<?php endif; ?>
+<meta name="author" content="<?= esc($authorName) ?>" />
 <link rel="canonical" href="<?= current_url() ?>" />
-<meta itemprop="name" content="<?= $post->title ?>" />
-<meta itemprop="description" content="<?= $post->meta_description ?>" />
-<meta itemprop="image" content="<?= base_url('images/posts/' .$post->featured_image) ?>" />
-<meta property="og:type" content="website" />
-<meta property="og:title" content="<?= $post->title ?>" />
-<meta property="og:description" content="<?= $post->meta_description ?>" />
+
+<!-- Open Graph / Facebook -->
+<meta property="og:locale" content="id_ID" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="<?= esc(get_settings()->blog_title) ?>" />
+<meta property="og:title" content="<?= esc($post->title) ?>" />
+<meta property="og:description" content="<?= esc($postDescription) ?>" />
 <meta property="og:url" content="<?= current_url() ?>" />
-<meta property="og:image" content="<?= base_url('images/posts/' .$post->featured_image) ?>" />
-<meta name="twitter:domain" content="<?= base_url() ?>" />
+<?php if (!empty($imageUrl)): ?>
+<meta property="og:image" content="<?= $imageUrl ?>" />
+<meta property="og:image:alt" content="<?= esc($post->title) ?>" />
+<?php endif; ?>
+<?php if (!empty($publishedDate)): ?>
+<meta property="article:published_time" content="<?= $publishedDate ?>" />
+<?php endif; ?>
+<?php if (!empty($modifiedDate)): ?>
+<meta property="article:modified_time" content="<?= $modifiedDate ?>" />
+<?php endif; ?>
+<meta property="article:author" content="<?= esc($authorName) ?>" />
+<?php if (!empty($post->category_name)): ?>
+<meta property="article:section" content="<?= esc($post->category_name) ?>" />
+<?php endif; ?>
+<?php if (!empty($post->tags)): ?>
+<?php foreach (array_filter(array_map('trim', explode(',', $post->tags))) as $tag): ?>
+<meta property="article:tag" content="<?= esc($tag) ?>" />
+<?php endforeach; ?>
+<?php endif; ?>
+
+<!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" property="og:title" itemprop="name" content="<?= $post->title ?>" />
-<meta name="twitter:description" property="og:description" itemprop="description" content="<?= $post->meta_description ?>" />
-<meta name="twitter:image" content="<?= base_url('images/posts/' .$post->featured_image) ?>" />
+<meta name="twitter:domain" content="<?= parse_url(base_url(), PHP_URL_HOST) ?>" />
+<meta name="twitter:title" content="<?= esc($post->title) ?>" />
+<meta name="twitter:description" content="<?= esc($postDescription) ?>" />
+<?php if (!empty($imageUrl)): ?>
+<meta name="twitter:image" content="<?= $imageUrl ?>" />
+<meta name="twitter:image:alt" content="<?= esc($post->title) ?>" />
+<?php endif; ?>
+
+<!-- JSON-LD Structured Data: Article & BreadcrumbList -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BlogPosting",
+      "@id": "<?= current_url() ?>#article",
+      "headline": <?= json_encode($post->title) ?>,
+      "description": <?= json_encode($postDescription) ?>,
+      "url": "<?= current_url() ?>",
+      "mainEntityOfPage": "<?= current_url() ?>",
+      <?php if (!empty($publishedDate)): ?>"datePublished": "<?= $publishedDate ?>",<?php endif; ?>
+      <?php if (!empty($modifiedDate)): ?>"dateModified": "<?= $modifiedDate ?>",<?php endif; ?>
+      "author": {
+        "@type": "Person",
+        "name": <?= json_encode($authorName) ?>
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": <?= json_encode(get_settings()->blog_title) ?><?php if (!empty(get_settings()->blog_logo)): ?>,
+        "logo": {
+          "@type": "ImageObject",
+          "url": "<?= base_url('images/blogs/' . get_settings()->blog_logo) ?>"
+        }<?php endif; ?>
+      }<?php if (!empty($imageUrl)): ?>,
+      "image": {
+        "@type": "ImageObject",
+        "url": "<?= $imageUrl ?>"
+      }<?php endif; ?><?php if (!empty($post->category_name)): ?>,
+      "articleSection": <?= json_encode($post->category_name) ?><?php endif; ?><?php if (!empty($post->tags)): ?>,
+      "keywords": <?= json_encode($post->tags) ?><?php endif; ?>
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "<?= current_url() ?>#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Beranda",
+          "item": "<?= base_url() ?>"
+        }<?php if (!empty($post->category_name) && !empty($post->category_slug)): ?>,
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": <?= json_encode($post->category_name) ?>,
+          "item": "<?= route_to('category-post', $post->category_slug) ?>"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": <?= json_encode($post->title) ?>,
+          "item": "<?= current_url() ?>"
+        }<?php else: ?>,
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": <?= json_encode($post->title) ?>,
+          "item": "<?= current_url() ?>"
+        }<?php endif; ?>
+      ]
+    }
+  ]
+}
+</script>
 <?= $this->endSection() ?>
 <?= $this->section('breadcrumbs') ?>
 <nav class="modern-breadcrumb mb-4">
